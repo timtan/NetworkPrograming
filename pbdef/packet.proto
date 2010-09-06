@@ -1,0 +1,17 @@
+package com.trend;
+
+message Header{
+	required string file_name = 1;
+	required uint32 file_size = 2;
+	uint32 digest = 3;	
+}
+message Block{
+	required uint32 seq_num = 1;
+	required bytes content  = 2; 
+	required uint32 size = 3;
+	required string digest = 4;
+    required bool   eof = 5   ;
+}
+message Ack{
+	required bool success = 1;
+}
