@@ -40,3 +40,5 @@ $(PROTOC):
 	make; \
 	make install; \
 	cd -;
+CLIENT: $(PROTOC)
+	make -C client
