@@ -24,7 +24,7 @@ ${PROTOBUF_JAVA_RUNTIME}: ${PROTOC}
 	alias protoc=$(PROTOC); \
 	export LD_LIBRARY_PATH=${PROTOBUF_LIB_PATH}:$${LD_LIBRARY_PATH} ; \
 	cd ${PROTOBUF_JAVA_RUNTIME_SRC}; \
-	protoc  --java_out=src/main/java -I../src \
+	$(shell pwd)/$(PROTOC) --java_out=src/main/java -I../src \
 	../src/google/protobuf/descriptor.proto; \
 	mkdir -p build; \
 	javac -d build src/main/java/com/google/protobuf/*; \
