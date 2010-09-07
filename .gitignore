@@ -1,3 +1,6 @@
 3rd_party/google/*
 3rd_party/google
 /protobuf-java-2.3.0.jar
+*.o
+CLIENT
+*.pb.*
