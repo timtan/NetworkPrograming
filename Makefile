@@ -29,7 +29,7 @@ ${PROTOBUF_JAVA_RUNTIME}: ${PROTOC}
 	mkdir -p build; \
 	javac -d build src/main/java/com/google/protobuf/*; \
 	jar   -cvf $@ -C build/ .;
-	mv ${PROTOBUF_JAVA_RUNTIME_SRC}/$@ .;
+	mv ${PROTOBUF_JAVA_RUNTIME_SRC}/$@ ./server/lib;
 
 $(PROTOC):  
 	mkdir -p $(PROTOBUF_DIR);\

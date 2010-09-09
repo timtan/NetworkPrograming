@@ -13,5 +13,12 @@ message Block{
     required bool   eof = 5   ;
 }
 message Ack{
+	enum AckType {
+		UNKNOWN = 0;
+    	HEADER = 1;
+    	BLOCK = 2;
+    	EOF = 3;
+  	}
 	required bool success = 1;
+	required AckType type = 2 [default = UNKNOWN];	
 }
