@@ -3,7 +3,7 @@ NAME        = network-programming
 VERSION     = 1.0
 PKGNAME     = ${NAME}-${VERSION}
 SRCPATH     = .
-OUTPATH     = build
+OUTPATH   	= class
 LIBPATH     = lib
 
 ifndef BUILD_TAG
@@ -15,4 +15,8 @@ begin:
 
 proto:
 	protoc --proto_path=../pbdef/ --java_out=$(SRCPATH) ../pbdef/packet.proto
-
+	
+clean:
+	rm -r $(LIBPATH)
+	rm -r $(OUTPATH)
+	rm -r $(SRCPATH)/com
