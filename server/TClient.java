@@ -15,14 +15,26 @@ public class TClient {
     
     public void connect() throws Exception{
         BufferedInputStream in = null;
+        BufferedOutputStream out = null;
+        
         try {
             clientSocket = new Socket(host, TServer.SERVER_PORT);
             in = new BufferedInputStream(clientSocket.getInputStream());
-            //BufferedOutputStream out = new BufferedOutputStream(clientSocket.getOutputStream());
+            out = new BufferedOutputStream(clientSocket.getOutputStream());
             System.out.println("Connect to server on port " + clientSocket.getPort());
             
+            Packet.Header.Builder headBuilder = Packet.Header.newBuilder();
+            headBuilder.setFileName("test.txt");
+            headBuilder.setFileSize(10);
+            headBuilder.setDigest(0);
+            headBuilder.build().writeDelimitedTo(out);
+            out.flush();
+            System.out.println("Send header message...");
+                        
             Packet.Ack ack = Packet.Ack.parseFrom(in);
-            System.out.println("Receive ack from server is "+ack.getSuccess());            
+            if (ack.getSuccess() && ack.getType() == Packet.Ack.AckType.HEADER) {
+                System.out.println("Receive ack success from server");
+            }          
         }
         catch (Exception e) {
             

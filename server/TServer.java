@@ -44,8 +44,14 @@ public class TServer {
             try {
                 in = new BufferedInputStream(clientSocket.getInputStream());
                 out = new BufferedOutputStream(clientSocket.getOutputStream());
+                
+                Packet.Header.Builder headerBuilder = Packet.Header.newBuilder();
+                headerBuilder.mergeDelimitedFrom(in);
+                Packet.Header header = headerBuilder.build();
+                System.out.println(String.format("Get a new Header:%s, size:%d",header.getFileName(), header.getFileSize()));
                                 
                 Packet.Ack.Builder ackBuilder = Packet.Ack.newBuilder();
+                ackBuilder.setType(Packet.Ack.AckType.HEADER);
                 ackBuilder.setSuccess(true);
                 out.write(ackBuilder.build().toByteArray());
                 out.flush();
@@ -54,7 +60,8 @@ public class TServer {
                 //Header header = Header.parseFrom(in);                                
             }
             catch (IOException e) {
-                // Not to handle                
+                // Not to handle
+                System.out.println(e.getMessage());
             }
             finally {
                 try {
