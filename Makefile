@@ -1,6 +1,16 @@
 include Makefile.inc
 
-${PROTOBUF_JAVA_RUNTIME}: ${PROTOC}
+SERVER_LIB=$(shell pwd)/server/lib/${PROTOBUF_JAVA_RUNTIME} 
+
+all:${SERVER_LIB} CLIENT
+	make proto -C server
+	make -C server
+
+
+${SERVER_LIB}: ${PROTOBUF_JAVA_RUNTIME}
+	cp ${PROTOBUF_JAVA_RUNTIME} ./server/lib;
+
+${PROTOBUF_JAVA_RUNTIME}: ${PROTOC} 
 	alias protoc=$(PROTOC); \
 	export LD_LIBRARY_PATH=${PROTOBUF_LIB_PATH}:$${LD_LIBRARY_PATH} ; \
 	cd ${PROTOBUF_JAVA_RUNTIME_SRC}; \
@@ -9,7 +19,7 @@ ${PROTOBUF_JAVA_RUNTIME}: ${PROTOC}
 	mkdir -p build; \
 	javac -d build src/main/java/com/google/protobuf/*; \
 	jar   -cvf $@ -C build/ .;
-	mv ${PROTOBUF_JAVA_RUNTIME_SRC}/$@ ./server/lib;
+	mv ${PROTOBUF_JAVA_RUNTIME_SRC}/$@ .;
 
 $(PROTOC):  
 	mkdir -p $(PROTOBUF_DIR);\
@@ -20,5 +30,6 @@ $(PROTOC):
 	make; \
 	make install; \
 	cd -;
+#TODO, need to refine 
 CLIENT: $(PROTOC)
 	make -C client
