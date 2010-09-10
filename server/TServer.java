@@ -1,15 +1,12 @@
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import com.trend.Packet;
-import com.trend.Packet.Header;
 
 public class TServer {
     
     public static final int SERVER_PORT = 2010;
-    public static final int SERVER_TIMEOUT = 30000;
+    public static final int SERVER_TIMEOUT = 600000;
+    private final int MAX_NUM_THREAD = 5;
     private ServerSocket srvSocket;
     
     
@@ -31,49 +28,19 @@ public class TServer {
     
     public TServer() throws Exception{
         bindServicePort(5);
+        
+        for (int i = 0; i < MAX_NUM_THREAD; i++) {
+            Thread t = new Thread(new RequestProcessor());
+            t.start();
+        }
     }
     
     public void waitRequest() throws IOException {
         while (true) {
-            Socket clientSocket = null;
-            BufferedInputStream in = null;
-            BufferedOutputStream out = null;
-            
+            Socket clientSocket = null;                      
             clientSocket = srvSocket.accept();
-            
-            try {
-                in = new BufferedInputStream(clientSocket.getInputStream());
-                out = new BufferedOutputStream(clientSocket.getOutputStream());
-                
-                Packet.Header.Builder headerBuilder = Packet.Header.newBuilder();
-                headerBuilder.mergeDelimitedFrom(in);
-                Packet.Header header = headerBuilder.build();
-                System.out.println(String.format("Get a new Header:%s, size:%d",header.getFileName(), header.getFileSize()));
-                                
-                Packet.Ack.Builder ackBuilder = Packet.Ack.newBuilder();
-                ackBuilder.setType(Packet.Ack.AckType.HEADER);
-                ackBuilder.setSuccess(true);
-                out.write(ackBuilder.build().toByteArray());
-                out.flush();
-                clientSocket.close();
-                System.out.println("Accept a client from "+clientSocket.getLocalAddress().toString());
-                //Header header = Header.parseFrom(in);                                
-            }
-            catch (IOException e) {
-                // Not to handle
-                System.out.println(e.getMessage());
-            }
-            finally {
-                try {
-                    if (in != null) in.close();
-                    if (out != null) out.close();
-                    if (clientSocket != null) clientSocket.close();                
-                }
-                catch (Exception e) {
-                    // Todo:
-                }
-            }            
-        }   
+            RequestProcessor.processRequest(clientSocket);
+        }
     }
     /**
      * @param args

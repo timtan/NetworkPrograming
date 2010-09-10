@@ -14,7 +14,7 @@ begin:
 	@ant
 
 proto:
-	protoc --proto_path=../pbdef/ --java_out=$(SRCPATH) ../pbdef/packet.proto
+	../3rd_party/google/build/bin/protoc --proto_path=../pbdef/ --java_out=$(SRCPATH) ../pbdef/packet.proto
 	
 clean:
 	rm -r $(LIBPATH)
