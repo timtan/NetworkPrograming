@@ -5,7 +5,7 @@ import java.net.Socket;
 public class TServer {
     
     public static final int SERVER_PORT = 2010;
-    public static final int SERVER_TIMEOUT = 60000;
+    public static final int SERVER_TIMEOUT = 600000;
     private final int MAX_NUM_THREAD = 5;
     private ServerSocket srvSocket;
     
