@@ -46,7 +46,7 @@ public class TClient {
                 out.flush();
                 
                 ack = Packet.Ack.parseDelimitedFrom(in);
-                System.out.println(String.format("Receive ack(%s) success from server", ack.getType()));
+                System.out.println(String.format("Receive ack(%s) %s from server", ack.getType(), ack.getSuccess()? "success" : "failed"));
                 
 //                ack = Packet.Ack.parseDelimitedFrom(in);
 //                System.out.println(String.format("Receive ack(%s) success from server", ack.getType()));
