@@ -4,3 +4,5 @@
 *.o
 CLIENT
 *.pb.*
+server/lib/*
+server/class/*

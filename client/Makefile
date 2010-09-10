@@ -10,12 +10,12 @@ LIBPATH = -L$(shell pwd)/../3rd_party/google/build/lib/ -L/lib64
 STATIC = -Xlinker -Bstatic
 STATIS_LIB = -lprotobuf 
 DYNAMIC= -Xlinker -Bdynamic
-DYNAMIC_LIB= -lstdc++
+DYNAMIC_LIB= -lstdc++ -lpthread
 
 CPPFLAGS+=  $(INCLUDE) $(LIBPATH) $(STATIC) $(STATIS_LIB) $(DYNAMIC) $(DYNAMIC_LIB)
 COMMAND=$(CXX) -o $@  $(CPPFLAGS)
 $(PROJECT): $(DEP)  $(OBJ) $(PBOBJ)
-	$(CXX) -o $(PROJECT) $(OBJ)  $(CFLAGS) $(CPPFLAGS)
+	$(CXX) -o $(PROJECT) $(OBJ) $(PBOBJ)  $(CFLAGS) $(CPPFLAGS)
 
 
 PROTOC=$(shell pwd)/../3rd_party/google/build/bin/protoc 
