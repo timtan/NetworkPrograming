@@ -30,5 +30,6 @@ $(PROTOC):
 	make; \
 	make install; \
 	cd -;
+#TODO, need to refine 
 CLIENT: $(PROTOC)
 	make -C client

@@ -52,7 +52,7 @@ int main(int argc, char** argv ){
 	//TODO, get file name from cli 
 	string file_name = "/tmp/test.html";
 	string tcp_host = "127.0.0.1";
-	string tcp_port = "8010";
+	string tcp_port = "2010";
 	
 	setup_header( h, file_name.c_str() ) ;
 	
