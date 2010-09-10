@@ -3,7 +3,7 @@ package com.trend;
 message Header{
 	required string file_name = 1;
 	required uint32 file_size = 2;
-	optional uint32 digest = 3;	
+	optional string digest = 3;	
 }
 message Block{
 	required uint32 seq_num = 1;
