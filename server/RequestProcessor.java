@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -16,6 +18,7 @@ public class RequestProcessor implements Runnable {
     private String filename ="";
     private long filesize = 0;
     private BufferedOutputStream fout = null;
+    private MessageDigest mdsum;
     
     public static void processRequest(Socket request) {
         synchronized(pool) {
@@ -37,6 +40,8 @@ public class RequestProcessor implements Runnable {
         Packet.Block.Builder blockBuilder = Packet.Block.newBuilder();
         blockBuilder.mergeDelimitedFrom(in);
         Packet.Block block = blockBuilder.build();
+        System.out.println(String.format("Receive a new block(Seq:%d Size:%d Digest:%s EOF:%s)", 
+                block.getSeqNum(), block.getSize(), block.getDigest(), block.getEof()));
         
         return block;
     }
@@ -62,6 +67,10 @@ public class RequestProcessor implements Runnable {
             try {
                 BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
                 BufferedOutputStream out = new BufferedOutputStream(connection.getOutputStream());
+                if (mdsum == null) 
+                    mdsum = MessageDigest.getInstance("MD5");
+                else
+                    mdsum.reset();
                 
                 if (fout == null) {
                     Packet.Header.Builder headerBuilder = Packet.Header.newBuilder();
@@ -70,26 +79,40 @@ public class RequestProcessor implements Runnable {
                     fout = new BufferedOutputStream(new FileOutputStream("/tmp/"+header.getFileName()));
                     filesize = header.getFileSize();
                     writeResponse(true, Packet.Ack.AckType.HEADER, out);
-                    System.out.println(String.format("Get a new Header:%s, size:%d",header.getFileName(), header.getFileSize()));                   
+                    System.out.println(String.format("Receive a new Header(filename:%s size:%d)",header.getFileName(), header.getFileSize()));                   
                 }
                                 
                 if (fout != null) {
                     while (true) {
                         Packet.Block block = getFileBlock(in);
-                        if (block.getEof()) break;
-                        
-                        byte[] content = block.getContent().toByteArray(); 
-                        fout.write(content, 0, block.getSize());
-                        
-                        writeResponse(true, Packet.Ack.AckType.BLOCK, out);
+                        if (block.getEof()) {
+                            String digest = String.valueOf(mdsum.digest());
+                            if (block.getDigest().equals(digest)) 
+                                writeResponse(true, Packet.Ack.AckType.EOF, out);
+                            else
+                                writeResponse(false, Packet.Ack.AckType.EOF, out);
+                            break;
+                        }
+                                              
+                        byte[] content = block.getContent().toByteArray();
+                        MessageDigest md = MessageDigest.getInstance("MD5");
+                        md.update(content);
+                        String digest = String.valueOf(md.digest());
+                        if (block.getDigest().equals(digest)) {
+                            fout.write(content, 0, block.getSize());                           
+                            writeResponse(true, Packet.Ack.AckType.BLOCK, out);
+                            mdsum.update(content);
+                        }
+                        else {
+                            writeResponse(false, Packet.Ack.AckType.BLOCK, out);
+                        }                        
                     }                    
-                }
-                
-                writeResponse(true, Packet.Ack.AckType.EOF, out);
+                }                
             }
             catch (IOException e) {
-                // Not to handle
-                System.out.println(e.getMessage());
+                e.printStackTrace();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
             }
             finally {
                 try {
