@@ -1,19 +1,21 @@
 #include"packet.pb.h"
+#include<iostream>
+#include<sstream>
+#include<fstream>
+#include<cstdio>
+#include<sys/socket.h>
+#include<netinet/in.h>
+#include<netinet/tcp.h>
+#include<netdb.h>
 #include<sys/types.h>
 #include<sys/stat.h>
 #include<unistd.h>
-#include<iostream>
-#include<cstdio>
-#include<sstream>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
 
 #include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <fstream>
+#include <typeinfo>
 using namespace com::trend;
 using namespace std;
+using namespace google::protobuf::io;
 bool setup_header( Header& h,const char * file_name ){
 	h.set_file_name(file_name);
 
@@ -42,7 +44,7 @@ bool read_ack( Ack ack, google::protobuf::io::CodedInputStream& codedInput ){
 	//TODO: use exception.
 	unsigned int ack_size;
 	codedInput.ReadVarint32( &ack_size );
-	cout<<"ack head size"<< ack_size << endl ;
+	cout<<"ack size recorded as "<< ack_size << endl ;
 	int limit = codedInput.PushLimit( ack_size );
 	bool ack_parse_ret = ack.ParseFromCodedStream(&codedInput);
 	codedInput.PopLimit( limit );
@@ -51,11 +53,9 @@ bool read_ack( Ack ack, google::protobuf::io::CodedInputStream& codedInput ){
 		return false;
 	}
 	if(not ack.success()){
-		cerr<<"ack error" <<endl;
 		return false;
 	}
 	else{
-		cerr<<"ack success"<<endl;
 		return true;
 	}
 }
@@ -71,8 +71,26 @@ bool read_ack( Ack ack, google::protobuf::io::CodedInputStream& codedInput ){
 		return connect_ret ;
 	}
 
+template<typename PB>
+bool PB_serilize( PB& pb , int fd ){
+	//FIXME, 50 is ok, but need a better inference.
+	int potential_size = 100 + pb.ByteSize() ;
+	char* buffer = new char[ potential_size  ] ;
+
+	ArrayOutputStream raw_output( buffer, potential_size   );
+	{
+		CodedOutputStream codedOutput( &raw_output);
+		codedOutput.WriteVarint32(pb.ByteSize());	
+		bool serialize_ret = pb.SerializeToCodedStream( &codedOutput ) ;
+		if( false == serialize_ret ){
+			cerr<<"Serialize error "<< endl ;
+			return -1;
+		}
+	}
+	write( fd, buffer, raw_output.ByteCount() ) ;
+	delete[] buffer;
+}
 #define show_var( var, out  )  out<<#var<<":"<<var<<"."<<endl
-using namespace google::protobuf::io;
 int main(int argc, char** argv ){
 
 	//Receieving Argument.
@@ -122,24 +140,7 @@ int main(int argc, char** argv ){
 		return -1;
 	}
 
-	int potential_size = 4 + h.ByteSize() ;
-	char* buffer = new char[ potential_size  ] ;
-	ArrayOutputStream* raw_output = new ArrayOutputStream( buffer, potential_size   );
-	CodedOutputStream* codedOutput = new CodedOutputStream( raw_output);
-	codedOutput->WriteVarint32(h.ByteSize());	
-	show_var( h.GetCachedSize() , cout ) ;
-	bool serialize_ret = h.SerializeToCodedStream( codedOutput ) ;
-	if( false == serialize_ret ){
-		cerr<<"Serialize error of header" << endl ;
-		return -1;
-	}
-	delete codedOutput;
-	delete raw_output;
-	write( tcp_socket, buffer, potential_size  ) ;
-	delete[] buffer;
-
-
-	/*
+	PB_serilize( h , tcp_socket );
 	Ack ack;
 	google::protobuf::io::FileInputStream  raw_input( tcp_socket );
 	google::protobuf::io::CodedInputStream codedInput( &raw_input);
@@ -151,16 +152,12 @@ int main(int argc, char** argv ){
 	int seq_num = 0 ;
 	ifstream fin( file_name.c_str()  );			
 	while(fin){
-
+		cout<< seq_num << endl ;
 		const int buffer_size = 1024;
 		char buffer[ buffer_size ] ;
 		fin.read( buffer , buffer_size ) ;
-		cout<<"Read some data"
-			<<fin.gcount() 
-			<<buffer[0] <<endl;
+		
 		int readded_size = fin.gcount() ;
-
-
 		Block block;	
 		seq_num+=1;
 		block.set_seq_num( seq_num );
@@ -168,25 +165,25 @@ int main(int argc, char** argv ){
 		block.set_size( readded_size );
 		block.set_digest( "xxx" );
 		block.set_eof( false );
-
-		codedOutput.WriteVarint32(block.ByteSize());	
-		block.SerializeToCodedStream( &codedOutput ) ;
-
+		PB_serilize( block, tcp_socket );
 		if( false == read_ack( ack, codedInput ) ){
+			cerr<<"MD5 Not complete"<<endl;
 			cerr<<"read_ack error"<<endl;
-			return -1;
+			//return -1;
+		}
+		else{
+			cout<<"read_ack ok" << endl;
 		}
 	}
 	Block block;	//last block
 	seq_num+=1;
 	block.set_seq_num(  0 );
-	block.set_content( "0" , 1 );
+	string dummy_buffer = "dummy" ;
+	block.set_content( dummy_buffer.c_str()  , 0   );
 	block.set_size( 0 );
-	block.set_digest( 0 );
+	block.set_digest( "xxx" );
 	block.set_eof( true);
-	codedOutput.WriteVarint32(block.ByteSize());	
-	block.SerializeToCodedStream( & codedOutput ) ;
-	*/
+	PB_serilize( block , tcp_socket );
 	close( tcp_socket );
 	return 0 ;
 }
