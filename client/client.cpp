@@ -16,7 +16,7 @@ using namespace com::trend;
 using namespace std;
 bool setup_header( Header& h,const char * file_name ){
 	h.set_file_name(file_name);
-		
+
 	struct stat st;
 	//TODO, check file existance.
 	stat( file_name , &st );
@@ -35,7 +35,7 @@ bool setup_header( Header& h,const char * file_name ){
 	string md5sum;
 	command_intput>>md5sum;
 	h.set_digest( md5sum );
-	
+
 	return true;	
 }
 bool read_ack( Ack ack, google::protobuf::io::CodedInputStream& codedInput ){
@@ -59,61 +59,87 @@ bool read_ack( Ack ack, google::protobuf::io::CodedInputStream& codedInput ){
 		return true;
 	}
 }
-int Connect(int tcp_socket, struct addrinfo* server_addr ){
-	if( server_addr == NULL )
-		return -1 ;
-	int connect_ret = connect( tcp_socket, server_addr->ai_addr,  server_addr->ai_addrlen ) ;
+	int Connect(int tcp_socket, struct addrinfo* server_addr ){
+		if( server_addr == NULL )
+			return -1 ;
+		int connect_ret = connect( tcp_socket, server_addr->ai_addr,  server_addr->ai_addrlen ) ;
 
-	//TODO: use exception.
-	if( connect_ret != 0 ){
-		perror("connect failed");
-	}	
-	return connect_ret ;
-}
+		//TODO: use exception.
+		if( connect_ret != 0 ){
+			perror("connect failed");
+		}	
+		return connect_ret ;
+	}
+
+#define show_var( var, out  )  out<<#var<<":"<<var<<"."<<endl
+using namespace google::protobuf::io;
 int main(int argc, char** argv ){
-	Header h;
-	//TODO, get file name from cli 
-	string file_name = "test.html";
+
+	//Receieving Argument.
 	string tcp_host = "127.0.0.1";
 	string tcp_port = "2010";
-	
-	
+	string file_name = "test.html";
+	if( argc != 4  ) {
+		cerr<<"The program need to pass host ip port" << endl
+			<<"Now, It is in testing mode" << endl ;
+	}
+	else{
+		tcp_host = argv[1];
+		tcp_port = argv[2];
+		file_name = argv[3];
+	}
+	show_var( tcp_host, cout  );
+	show_var( tcp_port, cout  );
+	show_var( file_name, cout );
 
-    int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
-    struct addrinfo hints;
-    struct addrinfo* server_addr = NULL;
+
+
+	int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
+	struct addrinfo hints;
+	struct addrinfo* server_addr = NULL;
 
 	//Address Structure fill.
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET ;
-    hints.ai_socktype = SOCK_STREAM ;
-    hints.ai_protocol = 0 ; 
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET ;
+	hints.ai_socktype = SOCK_STREAM ;
+	hints.ai_protocol = 0 ; 
 
 	int ret;
-    if ((ret = getaddrinfo(tcp_host.c_str(), tcp_port.c_str(), &hints, &server_addr)) != 0)
-    {   
+	if ((ret = getaddrinfo(tcp_host.c_str(), tcp_port.c_str(), &hints, &server_addr)) != 0)
+	{   
 		//TODO refine error message.
 		cout << gai_strerror(ret) << endl;
 		return -1;
-    }   
+	}   
 
 	if( 0 != Connect( tcp_socket, server_addr ) ){
 		return -1;	
 	}
 
-	google::protobuf::io::FileOutputStream raw_output( tcp_socket );
-	google::protobuf::io::CodedOutputStream codedOutput( &raw_output);
-
-
+	Header h;
 	if( not setup_header( h, file_name.c_str() )  ){
 		cerr<<"header setting error" <<endl;
 		return -1;
 	}
-	codedOutput.WriteVarint32(h.ByteSize());	
-    h.SerializeToCodedStream( &codedOutput ) ;
-	raw_output.Flush();
+
+	int potential_size = 4 + h.ByteSize() ;
+	char* buffer = new char[ potential_size  ] ;
+	ArrayOutputStream* raw_output = new ArrayOutputStream( buffer, potential_size   );
+	CodedOutputStream* codedOutput = new CodedOutputStream( raw_output);
+	codedOutput->WriteVarint32(h.ByteSize());	
+	show_var( h.GetCachedSize() , cout ) ;
+	bool serialize_ret = h.SerializeToCodedStream( codedOutput ) ;
+	if( false == serialize_ret ){
+		cerr<<"Serialize error of header" << endl ;
+		return -1;
+	}
+	delete codedOutput;
+	delete raw_output;
+	write( tcp_socket, buffer, potential_size  ) ;
+	delete[] buffer;
 
 
+	/*
 	Ack ack;
 	google::protobuf::io::FileInputStream  raw_input( tcp_socket );
 	google::protobuf::io::CodedInputStream codedInput( &raw_input);
@@ -133,7 +159,7 @@ int main(int argc, char** argv ){
 			<<fin.gcount() 
 			<<buffer[0] <<endl;
 		int readded_size = fin.gcount() ;
-		
+
 
 		Block block;	
 		seq_num+=1;
@@ -145,23 +171,22 @@ int main(int argc, char** argv ){
 
 		codedOutput.WriteVarint32(block.ByteSize());	
 		block.SerializeToCodedStream( &codedOutput ) ;
-		raw_output.Flush();
 
 		if( false == read_ack( ack, codedInput ) ){
 			cerr<<"read_ack error"<<endl;
 			return -1;
 		}
 	}
-		Block block;	//last block
-		seq_num+=1;
-		block.set_seq_num(  0 );
-		block.set_content( "0" , 1 );
-		block.set_size( 0 );
-		block.set_digest( 0 );
-		block.set_eof( true);
-		codedOutput.WriteVarint32(block.ByteSize());	
-		block.SerializeToCodedStream( &codedOutput ) ;
-		raw_output.Flush();
-		close( tcp_socket );
+	Block block;	//last block
+	seq_num+=1;
+	block.set_seq_num(  0 );
+	block.set_content( "0" , 1 );
+	block.set_size( 0 );
+	block.set_digest( 0 );
+	block.set_eof( true);
+	codedOutput.WriteVarint32(block.ByteSize());	
+	block.SerializeToCodedStream( & codedOutput ) ;
+	*/
+	close( tcp_socket );
 	return 0 ;
 }
