@@ -6,3 +6,5 @@ CLIENT
 *.pb.*
 server/lib/*
 server/class/*
+server/com
+client/test.html

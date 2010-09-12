@@ -43,7 +43,9 @@ bool read_ack( Ack ack, google::protobuf::io::CodedInputStream& codedInput ){
 	unsigned int ack_size;
 	codedInput.ReadVarint32( &ack_size );
 	cout<<"ack head size"<< ack_size << endl ;
-	bool ack_parse_ret = ack.ParsePartialFromCodedStream(&codedInput);
+	int limit = codedInput.PushLimit( ack_size );
+	bool ack_parse_ret = ack.ParseFromCodedStream(&codedInput);
+	codedInput.PopLimit( limit );
 	if( false == ack_parse_ret ){
 		cerr<<"parse response error" <<endl;
 		return false;
@@ -75,10 +77,6 @@ int main(int argc, char** argv ){
 	string tcp_host = "127.0.0.1";
 	string tcp_port = "2010";
 	
-	if( not setup_header( h, file_name.c_str() )  ){
-		cerr<<"header setting error" <<endl;
-		return -1;
-	}
 	
 
     int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -107,13 +105,17 @@ int main(int argc, char** argv ){
 	google::protobuf::io::CodedOutputStream codedOutput( &raw_output);
 
 
+	if( not setup_header( h, file_name.c_str() )  ){
+		cerr<<"header setting error" <<endl;
+		return -1;
+	}
 	codedOutput.WriteVarint32(h.ByteSize());	
     h.SerializeToCodedStream( &codedOutput ) ;
 	raw_output.Flush();
 
 
 	Ack ack;
-	google::protobuf::io::FileInputStream  raw_input( tcp_socket , 100);
+	google::protobuf::io::FileInputStream  raw_input( tcp_socket );
 	google::protobuf::io::CodedInputStream codedInput( &raw_input);
 	if( false == read_ack( ack, codedInput ) ){
 		cerr<<"read_ack error"<<endl;
@@ -160,5 +162,6 @@ int main(int argc, char** argv ){
 		codedOutput.WriteVarint32(block.ByteSize());	
 		block.SerializeToCodedStream( &codedOutput ) ;
 		raw_output.Flush();
+		close( tcp_socket );
 	return 0 ;
 }
