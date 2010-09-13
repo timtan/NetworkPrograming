@@ -22,6 +22,11 @@ int calc_dgst(char *msg, unsigned int msg_size, unsigned char *dgst, unsigned in
 	EVP_MD_CTX mdctx;
 	const EVP_MD *md;
 
+	static once = true;
+	if( once ){
+		once = false;
+		OpenSSL_add_all_digests();
+	}
 	md = EVP_get_digestbyname(DGST_FUNC);
 
 	EVP_MD_CTX_init(&mdctx);
