@@ -19,11 +19,6 @@ using namespace std;
 using namespace google::protobuf::io;
 int calc_dgst(char *msg, unsigned int msg_size, unsigned char *dgst, unsigned int *dgst_len,char * DGST_FUNC)
 {
-	static bool once = true;
-	if( once ){
-		once = false;
-		OpenSSL_add_all_digests();
-	}
 	EVP_MD_CTX mdctx;
 	const EVP_MD *md;
 
@@ -200,19 +195,18 @@ int main(int argc, char** argv ){
 		unsigned int bin_dgst_len;
 
 		// calculate diget from post_data.
-		calc_dgst(buffer, readded_size, bin_dgst, &bin_dgst_len, "md5");
+		calc_dgst(buffer, readded_size, bin_dgst, &bin_dgst_len, "MD5");
 		dgst2str(bin_dgst, bin_dgst_len, calclated_digest, sizeof(calclated_digest));
-		
 		Block block;	
 		seq_num+=1;
 		block.set_seq_num( seq_num );
 		block.set_content( buffer, readded_size );
 		block.set_size( readded_size );
-		cout<< calclated_digest <<endl;
 		block.set_digest( calclated_digest  );
 		block.set_eof( false );
 		PB_serilize( block, tcp_socket );
 		if( false == read_ack( ack, codedInput ) ){
+			cerr<<"MD5 Not complete"<<endl;
 			cerr<<"read_ack error"<<endl;
 			//return -1;
 		}
