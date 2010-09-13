@@ -133,8 +133,8 @@ int main(int argc, char** argv ){
 	string tcp_port = "2010";
 	string file_name = "test.html";
 	if( argc != 4  ) {
-		cerr<<"The program need to pass host ip port" << endl
-			<<"Now, It is in testing mode" << endl ;
+		cerr<<"The program need to pass argument of 'host ip port'" << endl
+			<<"Now, It is in testing mode, and the default argument are as following" << endl ;
 	}
 	else{
 		tcp_host = argv[1];
