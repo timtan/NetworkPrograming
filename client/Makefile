@@ -29,4 +29,5 @@ $(PBDEF): $(PBDEF_FILE)
 
 clean:
 	rm *.o
+	rm *.pb.*
 	rm $(PROJECT)

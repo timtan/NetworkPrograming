@@ -1,0 +1,54 @@
+Project Layout
+
+.
+|-- 3rd_party
+|   `-- protobuf-2.3.0.tar.bz2
+|-- Makefile
+|-- Makefile.inc
+|-- README
+|-- client
+|   |-- Makefile
+|   |-- client.cpp
+|   `-- test.html
+|-- pbdef
+|   `-- packet.proto
+`-- server
+    |-- Makefile
+    |-- RequestProcessor.java
+    |-- TClient.java
+    |-- TServer.java
+    |-- build.xml
+    `-- runserver.sh
+
+
+How to build
+	in main directory.
+    
+	   make 
+
+
+How to execute Server
+	in main directory..	
+
+	cd server
+	./runserver.sh    
+    
+How to execute client
+    in main directory it will send a file call test.html.
+
+    cd client
+	./CLIENT  
+
+      or
+
+    cd client 
+    ./CLIENT ip port file_tosend
+
+    e.g.
+
+    ./CLIENT 127.0.0.1 2010 test.html
+
+Where the server save file?
+
+    it will be put in /tmp/
+
