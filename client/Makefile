@@ -10,7 +10,7 @@ LIBPATH = -L$(shell pwd)/../3rd_party/google/build/lib/ -L/lib64
 STATIC = -Xlinker -Bstatic
 STATIS_LIB = -lprotobuf 
 DYNAMIC= -Xlinker -Bdynamic
-DYNAMIC_LIB= -lstdc++ -lpthread
+DYNAMIC_LIB= -lstdc++ -lpthread -lcrypto
 
 CPPFLAGS+=  -g3 $(INCLUDE) $(LIBPATH) $(STATIC) $(STATIS_LIB) $(DYNAMIC) $(DYNAMIC_LIB)
 COMMAND=$(CXX) -o $@  $(CPPFLAGS)
