@@ -8,6 +8,7 @@ all:${SERVER_LIB} CLIENT
 
 
 ${SERVER_LIB}: ${PROTOBUF_JAVA_RUNTIME}
+	mkdir -p ./server/lib
 	cp ${PROTOBUF_JAVA_RUNTIME} ./server/lib;
 
 ${PROTOBUF_JAVA_RUNTIME}: ${PROTOC} 
