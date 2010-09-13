@@ -10,12 +10,42 @@
 #include<sys/types.h>
 #include<sys/stat.h>
 #include<unistd.h>
+#include<openssl/evp.h>
 
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <typeinfo>
 using namespace com::trend;
 using namespace std;
 using namespace google::protobuf::io;
+int calc_dgst(char *msg, unsigned int msg_size, unsigned char *dgst, unsigned int *dgst_len,char * DGST_FUNC)
+{
+	EVP_MD_CTX mdctx;
+	const EVP_MD *md;
+
+	md = EVP_get_digestbyname(DGST_FUNC);
+
+	EVP_MD_CTX_init(&mdctx);
+	EVP_DigestInit_ex(&mdctx, md, NULL);
+	EVP_DigestUpdate(&mdctx, msg, msg_size);
+	EVP_DigestFinal_ex(&mdctx, dgst, dgst_len);
+	EVP_MD_CTX_cleanup(&mdctx);
+
+
+	return 0;
+}
+int dgst2str(unsigned char *dgst, int dgst_len, char *buf, int buf_len)
+{
+	int i;
+
+	buf[0] = '\0';
+	for(i = 0; i < dgst_len; i++)
+		snprintf(buf+strlen(buf), buf_len-strlen(buf), "%02x", dgst[i]);
+
+	return 0;
+}
+
+
+
 bool setup_header( Header& h,const char * file_name ){
 	h.set_file_name(file_name);
 
@@ -158,12 +188,21 @@ int main(int argc, char** argv ){
 		fin.read( buffer , buffer_size ) ;
 		
 		int readded_size = fin.gcount() ;
+
+
+		unsigned char bin_dgst[EVP_MAX_MD_SIZE];
+		char calclated_digest[EVP_MAX_MD_SIZE*2 + 1];
+		unsigned int bin_dgst_len;
+
+		// calculate diget from post_data.
+		calc_dgst(buffer, readded_size, bin_dgst, &bin_dgst_len, "MD5");
+		dgst2str(bin_dgst, bin_dgst_len, calclated_digest, sizeof(calclated_digest));
 		Block block;	
 		seq_num+=1;
 		block.set_seq_num( seq_num );
 		block.set_content( buffer, readded_size );
 		block.set_size( readded_size );
-		block.set_digest( "xxx" );
+		block.set_digest( calclated_digest  );
 		block.set_eof( false );
 		PB_serilize( block, tcp_socket );
 		if( false == read_ack( ack, codedInput ) ){
