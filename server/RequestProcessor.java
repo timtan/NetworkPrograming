@@ -46,7 +46,16 @@ public class RequestProcessor implements Runnable {
         return block;
     }
     
-    
+	private String getHexForm( byte[] messageDigest ){
+		StringBuffer hexString = new StringBuffer();
+		for (int i=0;i<messageDigest.length;i++) {
+			String hex=Integer.toHexString(0xff & messageDigest[i]);
+			if(hex.length()==1) hexString.append('0');
+			hexString.append(hex);
+
+		}
+		return hexString.toString() ;
+	}	
     @Override
     public void run() {
         while (true) {
@@ -87,7 +96,9 @@ public class RequestProcessor implements Runnable {
                         Packet.Block block = getFileBlock(in);
                         if (block.getEof()) {
                             String digest = String.valueOf(mdsum.digest());
-                            if (block.getDigest().equals(digest)) 
+							String digestHexForm = getHexForm( mdsum.digest() );
+							System.out.println( digestHexForm ) ;
+                            if (block.getDigest().equals(digestHexForm)) 
                                 writeResponse(true, Packet.Ack.AckType.EOF, out);
                             else
                                 writeResponse(false, Packet.Ack.AckType.EOF, out);
@@ -97,13 +108,17 @@ public class RequestProcessor implements Runnable {
                         byte[] content = block.getContent().toByteArray();
                         MessageDigest md = MessageDigest.getInstance("MD5");
                         md.update(content);
-                        String digest = String.valueOf(md.digest());
-                        if (block.getDigest().equals(digest)) {
+                        //String digest = String.valueOf(md.digest());
+						String digestHexForm = getHexForm( md.digest() );
+						System.out.println( digestHexForm ) ;
+                        if (block.getDigest().equals(digestHexForm)) {
+							System.out.println("md5 match" ) ;
                             fout.write(content, 0, block.getSize());                           
                             writeResponse(true, Packet.Ack.AckType.BLOCK, out);
                             mdsum.update(content);
                         }
                         else {
+							System.out.println("md5 mis match" ) ;
                             writeResponse(false, Packet.Ack.AckType.BLOCK, out);
                         }                        
                     }                    

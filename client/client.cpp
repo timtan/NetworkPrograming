@@ -22,7 +22,7 @@ int calc_dgst(char *msg, unsigned int msg_size, unsigned char *dgst, unsigned in
 	EVP_MD_CTX mdctx;
 	const EVP_MD *md;
 
-	static once = true;
+	static bool once = true;
 	if( once ){
 		once = false;
 		OpenSSL_add_all_digests();
@@ -211,7 +211,6 @@ int main(int argc, char** argv ){
 		block.set_eof( false );
 		PB_serilize( block, tcp_socket );
 		if( false == read_ack( ack, codedInput ) ){
-			cerr<<"MD5 Not complete"<<endl;
 			cerr<<"read_ack error"<<endl;
 			//return -1;
 		}
@@ -225,9 +224,16 @@ int main(int argc, char** argv ){
 	string dummy_buffer = "dummy" ;
 	block.set_content( dummy_buffer.c_str()  , 0   );
 	block.set_size( 0 );
-	block.set_digest( "xxx" );
+	block.set_digest( h.digest() );
 	block.set_eof( true);
 	PB_serilize( block , tcp_socket );
+	if( false == read_ack( ack, codedInput ) ){
+		cerr<<"read_ack error"<<endl;
+		//return -1;
+	}
+	else{
+		cout<<"read_ack ok" << "file transer complete"<< endl;
+	}
 	close( tcp_socket );
 	return 0 ;
 }
