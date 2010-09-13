@@ -97,7 +97,8 @@ public class RequestProcessor implements Runnable {
                         byte[] content = block.getContent().toByteArray();
                         MessageDigest md = MessageDigest.getInstance("MD5");
                         md.update(content);
-                        String digest = String.valueOf(md.digest());
+                        String digest = md.digest().toString() ;
+						System.out.println( digest ) ;
                         if (block.getDigest().equals(digest)) {
                             fout.write(content, 0, block.getSize());                           
                             writeResponse(true, Packet.Ack.AckType.BLOCK, out);
